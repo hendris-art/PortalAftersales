@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ORIENT Aftersales</title>
+<meta name="description" content="Portal Aftersales Orient">
+<meta name="theme-color" content="#0b2230">
+<meta name="application-name" content="ORIENT">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ORIENT">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+/* ============================================================
+   ORIENT Aftersales - aplikasi (PWA) pembungkus portal Apps Script.
+   ATUR SEKALI: isi APP_URL di bawah (bagian <script>) dengan URL Web App
+   yang berakhiran /exec. Bila dikosongkan, aplikasi akan meminta URL saat pertama dibuka.
+   ============================================================ */
+:root{--bg:#0b2230;--panel:#0f2d3d;--line:#1d4558;--text:#e8f1f5;--muted:#8fa9b6;--accent:#f08c1e;--teal:#1fa39f}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.45 Inter,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#app{position:fixed;inset:0;width:100%;height:100%;border:0;background:var(--bg);opacity:0;transition:opacity .35s}
+#app.on{opacity:1}
+.layer{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 40%,#123a4c 0,#0b2230 62%)}
+.layer.on{display:flex}
+.logo{width:96px;height:96px;filter:drop-shadow(0 8px 24px rgba(240,140,30,.35))}
+#splash .logo{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.07);opacity:.85}}
+.brand{font-size:22px;font-weight:800;letter-spacing:.06em}
+.sub{color:var(--muted);max-width:420px}
+.bar{width:180px;height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,var(--teal),var(--accent));border-radius:2px;animation:load 1.2s ease-in-out infinite}
+@keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+.btn{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:600 14px inherit;font-family:inherit;padding:10px 18px;border-radius:10px;cursor:pointer}
+.btn.pri{background:linear-gradient(135deg,#f0a23b,#e8862a);border-color:#f0a23b;color:#1b1206}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+input{width:min(520px,90vw);padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#081a24;color:var(--text);font:14px inherit;font-family:inherit}
+.err{color:#ffb3b1;font-size:13px;min-height:18px}
+.ico{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:rgba(240,162,59,.14);border:1.5px solid #f0a23b;color:#f0a23b;font-size:30px}
+/* tombol menu kecil (bisa digeser) */
+#fab{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:44px;height:44px;border-radius:50%;border:1px solid rgba(240,140,30,.6);background:rgba(11,34,48,.92);display:none;place-items:center;cursor:pointer;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.45);touch-action:none;opacity:.55;transition:opacity .2s}
+#fab:hover,#fab.open{opacity:1}
+#fab.on{display:grid}
+#fab img{width:26px;height:26px;pointer-events:none}
+#menu{position:fixed;right:14px;bottom:calc(66px + env(safe-area-inset-bottom));min-width:230px;background:#0f2d3d;border:1px solid var(--line);border-radius:12px;padding:6px;display:none;z-index:21;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+#menu.on{display:block}
+#menu button{display:flex;gap:10px;align-items:center;width:100%;background:none;border:0;color:var(--text);font:14px inherit;font-family:inherit;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer}
+#menu button:hover{background:rgba(255,255,255,.06)}
+#menu button[hidden]{display:none}
+#menu .sep{height:1px;background:var(--line);margin:4px 2px}
+#menu small{display:block;color:var(--muted);font-size:11.5px;padding:6px 12px 4px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0f2d3d;border:1px solid var(--line);padding:10px 16px;border-radius:10px;display:none;z-index:30;max-width:90vw}
+#toast.on{display:block}
+#net{position:fixed;top:0;left:0;right:0;padding:6px 12px;text-align:center;font-size:12.5px;font-weight:600;background:#c0392b;color:#fff;transform:translateY(-100%);transition:transform .25s;z-index:25;padding-top:calc(6px + env(safe-area-inset-top))}
+#net.on{transform:none}
+@media (prefers-reduced-motion:reduce){#splash .logo,.bar i{animation:none}}
+</style>
+</head>
+<body>
+<iframe id="app" title="ORIENT Aftersales" allow="clipboard-read; clipboard-write; fullscreen; geolocation; camera; microphone" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+
+<div class="layer on" id="splash" role="status" aria-live="polite">
+  <img class="logo" src="icons/logo.png" alt="">
+  <div class="brand">ORIENT</div>
+  <div class="sub" id="splashTxt">Memuat Portal Aftersales...</div>
+  <div class="bar"><i></i></div>
+</div>
+
+<div class="layer" id="setup">
+  <img class="logo" src="icons/logo.png" alt="">
+  <div class="brand">Atur Aplikasi ORIENT</div>
+  <div class="sub">Tempel URL Web App portal (dari Apps Script: Deploy → Manage deployments → salin URL yang berakhiran <b>/exec</b>). Cukup sekali; URL tersimpan di perangkat ini.</div>
+  <input id="urlIn" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" spellcheck="false">
+  <div class="err" id="urlErr"></div>
+  <div class="row"><button class="btn pri" id="urlSave">Simpan &amp; Buka</button></div>
+</div>
+
+<div class="layer" id="offline">
+  <div class="ico" aria-hidden="true">!</div>
+  <div class="brand" style="font-size:19px">Tidak ada koneksi internet</div>
+  <div class="sub">Aplikasi akan terbuka otomatis begitu koneksi kembali.</div>
+  <div class="row"><button class="btn pri" id="retry">Coba Lagi</button></div>
+</div>
+
+<div class="layer" id="slow">
+  <div class="ico" aria-hidden="true">⏳</div>
+  <div class="brand" style="font-size:19px">Portal belum terbuka</div>
+  <div class="sub">Koneksi lambat atau akun Google perlu masuk ulang. Coba muat ulang, atau buka langsung (tanpa bingkai aplikasi).</div>
+  <div class="row"><button class="btn" id="slowDirect">Buka Langsung</button><button class="btn pri" id="slowRetry">Muat Ulang</button></div>
+</div>
+
+<button id="fab" type="button" aria-label="Menu aplikasi ORIENT" aria-haspopup="menu" title="Menu aplikasi (bisa digeser)"><img src="icons/logo.png" alt=""></button>
+<div id="menu" role="menu">
+  <button role="menuitem" data-a="reload">⟳ Muat ulang portal</button>
+  <button role="menuitem" data-a="direct">↗ Buka langsung (tanpa bingkai)</button>
+  <button role="menuitem" data-a="install" id="mInstall" hidden>⬇ Pasang aplikasi di perangkat ini</button>
+  <button role="menuitem" data-a="full" id="mFull">⛶ Layar penuh</button>
+  <div class="sep"></div>
+  <button role="menuitem" data-a="url">⚙ Ganti URL portal</button>
+  <small id="ver">ORIENT App v1</small>
+</div>
+<div id="net">Koneksi internet terputus — perubahan akan gagal disimpan sampai koneksi kembali.</div>
+<div id="toast"></div>
+
+<script>
+/* ============ PENGATURAN ============ */
+// Isi dengan URL Web App Apps Script Anda (berakhiran /exec). Kosongkan bila ingin diisi lewat layar "Atur Aplikasi".
+const APP_URL = '';
+const APP_VERSION = '1.0.0';
+/* ==================================== */
+(function () {
+  const $ = id => document.getElementById(id);
+  const frame = $('app'), lay = id => ['splash', 'setup', 'offline', 'slow'].forEach(x => $(x).classList.toggle('on', x === id));
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const toast = (t, ms) => { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), ms || 3200); };
+  const qs = new URLSearchParams(location.search);
+  const valid = u => /^https:\/\/script\.google(usercontent)?\.com\/.+/i.test(u || '') || /^https:\/\/[^\s]+\/exec(\?.*)?$/i.test(u || '');
+  let url = qs.get('url') || store.get('orientUrl') || APP_URL;
+  if (qs.get('url') && valid(qs.get('url'))) store.set('orientUrl', qs.get('url'));
+  $('ver').textContent = 'ORIENT App v' + APP_VERSION;
+  let loaded = false, slowT = null;
+
+  function buka() {
+    if (!valid(url)) { lay('setup'); $('urlIn').value = url || ''; setTimeout(() => $('urlIn').focus(), 50); return; }
+    if (!navigator.onLine) { lay('offline'); return; }
+    if (store.get('orientMode') === 'direct') { location.replace(url); return; }
+    loaded = false; lay('splash'); $('splashTxt').textContent = 'Memuat Portal Aftersales...';
+    frame.classList.remove('on'); frame.src = url;
+    clearTimeout(slowT); slowT = setTimeout(() => { if (!loaded) lay('slow'); }, 30000);
+  }
+  frame.addEventListener('load', () => {
+    if (!frame.src || frame.src === 'about:blank') return;
+    loaded = true; clearTimeout(slowT); lay(null); frame.classList.add('on'); $('fab').classList.add('on');
+  });
+  $('urlSave').addEventListener('click', () => {
+    const v = $('urlIn').value.trim();
+    if (!valid(v)) { $('urlErr').textContent = 'URL belum sesuai. Gunakan URL Web App yang berakhiran /exec.'; return; }
+    url = v; store.set('orientUrl', v); $('urlErr').textContent = ''; buka();
+  });
+  $('urlIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('urlSave').click(); });
+  $('retry').addEventListener('click', buka);
+  $('slowRetry').addEventListener('click', buka);
+  $('slowDirect').addEventListener('click', () => location.assign(url));
+  window.addEventListener('online', () => { $('net').classList.remove('on'); if (!loaded) buka(); else toast('Koneksi kembali tersambung.'); });
+  window.addEventListener('offline', () => { if (loaded) $('net').classList.add('on'); else lay('offline'); });
+
+  /* menu + tombol yang bisa digeser */
+  const fab = $('fab'), menu = $('menu');
+  let drag = null, moved = false;
+  const pos = store.get('orientFab'); if (pos) { try { const p = JSON.parse(pos); fab.style.right = p.r + 'px'; fab.style.bottom = p.b + 'px'; } catch (e) {} }
+  fab.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, r: parseFloat(getComputedStyle(fab).right), b: parseFloat(getComputedStyle(fab).bottom) }; moved = false; fab.setPointerCapture(e.pointerId); });
+  fab.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 6) moved = true; if (!moved) return;
+    const r = Math.min(innerWidth - 50, Math.max(4, drag.r - dx)), b = Math.min(innerHeight - 50, Math.max(4, drag.b - dy)); fab.style.right = r + 'px'; fab.style.bottom = b + 'px'; menu.style.right = r + 'px'; menu.style.bottom = (b + 52) + 'px'; });
+  fab.addEventListener('pointerup', () => { if (drag && moved) store.set('orientFab', JSON.stringify({ r: parseFloat(fab.style.right), b: parseFloat(fab.style.bottom) })); else { menu.classList.toggle('on'); fab.classList.toggle('open', menu.classList.contains('on')); } drag = null; });
+  document.addEventListener('pointerdown', e => { if (!menu.contains(e.target) && e.target !== fab) { menu.classList.remove('on'); fab.classList.remove('open'); } });
+  let deferred = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; $('mInstall').hidden = false; });
+  window.addEventListener('appinstalled', () => { $('mInstall').hidden = true; toast('Aplikasi ORIENT terpasang. Buka dari layar utama / Start menu.', 5000); });
+  if (!document.fullscreenEnabled) $('mFull').hidden = true;
+  menu.addEventListener('click', async e => {
+    const b = e.target.closest('[data-a]'); if (!b) return; menu.classList.remove('on'); fab.classList.remove('open');
+    const a = b.dataset.a;
+    if (a === 'reload') buka();
+    else if (a === 'direct') location.assign(url);
+    else if (a === 'url') { lay('setup'); $('urlIn').value = url || ''; }
+    else if (a === 'full') { try { document.fullscreenElement ? await document.exitFullscreen() : await document.documentElement.requestFullscreen(); } catch (x) {} }
+    else if (a === 'install' && deferred) { deferred.prompt(); const r = await deferred.userChoice; if (r.outcome === 'accepted') toast('Memasang aplikasi ORIENT...'); deferred = null; $('mInstall').hidden = true; }
+  });
+
+  /* service worker: buka cepat & tampil saat offline; pembaruan otomatis */
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => { const w = reg.installing; if (w) w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) toast('Versi baru aplikasi siap. Tutup lalu buka kembali aplikasi untuk memperbarui.', 6000); }); });
+    }).catch(() => {});
+  }
+  buka();
+})();
+</script>
+</body>
+</html>

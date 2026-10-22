@@ -1,0 +1,49 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panduan Aplikasi ORIENT</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--text:#13232e;--muted:#5b6b75;--line:#e2dccf;--accent:#e8862a;--navy:#0f2b3b;--teal:#11756d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Segoe UI,Roboto,Arial,sans-serif}
+header{background:var(--navy);color:#fff;padding:28px 20px}header .w{max-width:880px;margin:auto;display:flex;gap:16px;align-items:center}
+header img{width:64px;height:64px;border-radius:14px}header h1{margin:0;font-size:24px}header p{margin:4px 0 0;color:#b9ccd6}
+main{max-width:880px;margin:24px auto;padding:0 16px 40px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:16px}
+h2{margin:0 0 10px;font-size:18px;display:flex;gap:10px;align-items:center}h2 span{flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:14px}
+h3{font-size:15px;margin:14px 0 6px;color:var(--navy)}ol,ul{margin:6px 0;padding-left:22px}li{margin:4px 0}
+code{background:#f0ece3;padding:1px 6px;border-radius:5px;font-size:13.5px}
+.note{background:#fff7ec;border:1px solid #f3d3a6;border-radius:10px;padding:10px 14px;margin-top:10px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.dev{border:1px solid var(--line);border-radius:12px;padding:12px 14px}.dev b{display:block;margin-bottom:4px;color:var(--teal)}
+</style></head><body>
+<header><div class="w"><img src="icons/icon-192.png" alt="Logo ORIENT"><div><h1>Aplikasi ORIENT Aftersales</h1><p>Cara memasang aplikasi di HP Android, iPhone, dan komputer Windows/Mac</p></div></div></header>
+<main>
+<section><h2><span>1</span>Isi URL portal (sekali saja)</h2>
+<ol><li>Di Apps Script buka <b>Deploy → Manage deployments</b>, salin <b>Web app URL</b> (berakhiran <code>/exec</code>).</li>
+<li>Buka file <code>index.html</code> di folder ini, cari baris <code>const APP_URL = '';</code> lalu tempel URL di antara tanda kutip. Simpan.</li></ol>
+<div class="note">Boleh dilewati: bila <code>APP_URL</code> dikosongkan, aplikasi akan meminta URL saat pertama dibuka dan menyimpannya di perangkat.</div></section>
+
+<section><h2><span>2</span>Unggah ke GitHub Pages (gratis, 5 menit)</h2>
+<ol><li>Masuk ke <b>github.com</b> (buat akun bila belum ada) → <b>New repository</b> → beri nama <code>orient-app</code> → <b>Public</b> → Create.</li>
+<li>Klik <b>uploading an existing file</b>, lalu seret <b>seluruh isi</b> folder <code>orient-app</code> (termasuk folder <code>icons</code>) → <b>Commit changes</b>.</li>
+<li>Buka <b>Settings → Pages</b> → Source: <b>Deploy from a branch</b>, Branch: <b>main</b> / <b>(root)</b> → Save.</li>
+<li>Tunggu ±1 menit. Alamat aplikasi: <code>https://NAMA-AKUN.github.io/orient-app/</code></li></ol>
+<div class="note">Bagikan alamat itu ke tim. Setiap kali portal (Apps Script) diperbarui, aplikasi otomatis ikut terbaru — tidak perlu memasang ulang.</div></section>
+
+<section><h2><span>3</span>Pasang di perangkat</h2>
+<div class="grid">
+<div class="dev"><b>HP Android (Chrome)</b>Buka alamat aplikasi → menu ⋮ → <b>Instal aplikasi</b> / <b>Tambahkan ke layar utama</b>. Ikon ORIENT muncul di layar utama dan daftar aplikasi.</div>
+<div class="dev"><b>iPhone / iPad (Safari)</b>Buka alamat aplikasi → tombol <b>Bagikan</b> □↑ → <b>Tambah ke Layar Utama</b> → Tambah.</div>
+<div class="dev"><b>Windows / Mac (Chrome atau Edge)</b>Buka alamat aplikasi → klik ikon <b>Instal</b> ⊕ di ujung kanan bilah alamat (atau menu ⋮ → <b>Instal ORIENT Aftersales</b>). Aplikasi muncul di Start menu / Launchpad dan bisa di-pin ke taskbar.</div>
+</div>
+<div class="note">Di dalam aplikasi ada tombol logo ORIENT kecil di pojok kanan bawah (bisa digeser): <b>Muat ulang</b>, <b>Buka langsung</b>, <b>Pasang aplikasi</b>, <b>Layar penuh</b>, dan <b>Ganti URL</b>.</div></section>
+
+<section><h2><span>4</span>Ingin file installer (.apk / Windows)?</h2>
+<ol><li>Setelah langkah 2 selesai, buka <b>pwabuilder.com</b>, tempel alamat aplikasi (<code>https://NAMA-AKUN.github.io/orient-app/</code>) → <b>Start</b>.</li>
+<li>Pilih <b>Package for stores</b> → <b>Android</b> (menghasilkan file <code>.apk</code> untuk dipasang langsung dan <code>.aab</code> untuk Play Store) atau <b>Windows</b> (paket <code>.msix</code>).</li>
+<li>Unduh, lalu bagikan file <code>.apk</code> ke HP tim (izinkan "Instal dari sumber tidak dikenal" saat diminta).</li></ol></section>
+
+<section><h2><span>5</span>Bila portal tidak tampil di dalam aplikasi</h2>
+<ul><li>Pastikan sudah masuk (login) ke akun Google <b>@orient.co.id</b> di browser yang sama.</li>
+<li>Gunakan menu <b>Buka langsung</b>: portal dibuka penuh tanpa bingkai aplikasi (cocok bila browser memblokir cookie pihak ketiga).</li>
+<li>Pastikan versi <code>Code.gs</code> terbaru sudah di-deploy (pengaturan <code>XFrameOptionsMode.ALLOWALL</code> sudah ada di dalamnya).</li>
+<li>Opsional: isi <code>APP_ICON_URL</code> di <code>Code.gs</code> dengan <code>https://NAMA-AKUN.github.io/orient-app/icons/icon-192.png</code> agar ikon ORIENT juga tampil di tab browser portal.</li></ul></section>
+</main></body></html>
