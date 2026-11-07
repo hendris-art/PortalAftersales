@@ -17,7 +17,7 @@
 <style>
 /* ============================================================
    ORIENT Aftersales - aplikasi (PWA) pembungkus portal Apps Script.
-   ATUR SEKALI: isi APP_URL di bawah (bagian <script>) dengan URL Web App
+   ALAMAT PORTAL otomatis terbawa dari tombol "Download Aplikasi" di portal (parameter ?url=). APP_URL di bawah boleh diisi URL Web App
    yang berakhiran /exec. Bila dikosongkan, aplikasi akan meminta URL saat pertama dibuka.
    ============================================================ */
 :root{--bg:#0b2230;--panel:#0f2d3d;--line:#1d4558;--text:#e8f1f5;--muted:#8fa9b6;--accent:#f08c1e;--teal:#1fa39f}
@@ -58,6 +58,18 @@ input{width:min(520px,90vw);padding:11px 13px;border-radius:10px;border:1px soli
 #toast.on{display:block}
 #net{position:fixed;top:0;left:0;right:0;padding:6px 12px;text-align:center;font-size:12.5px;font-weight:600;background:#c0392b;color:#fff;transform:translateY(-100%);transition:transform .25s;z-index:25;padding-top:calc(6px + env(safe-area-inset-top))}
 #net.on{transform:none}
+/* halaman pasang aplikasi */
+#pasang{justify-content:flex-start;overflow:auto;padding-top:calc(28px + env(safe-area-inset-top))}
+.card{width:min(520px,94vw);background:rgba(15,45,61,.92);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;text-align:left}
+.card h2{margin:0 0 4px;font-size:18px}.card .sub{max-width:none}
+.dev{display:flex;gap:6px;justify-content:center;margin:2px 0 4px;flex-wrap:wrap}
+.dev button{appearance:none;border:1px solid var(--line);background:none;color:var(--muted);font:600 12.5px inherit;font-family:inherit;padding:6px 12px;border-radius:20px;cursor:pointer}
+.dev button.on{background:rgba(31,163,159,.18);border-color:var(--teal);color:var(--text)}
+ol.lg{margin:10px 0 4px;padding-left:22px;line-height:1.6}ol.lg li{margin-bottom:8px}
+.k{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.1);border:1px solid var(--line);font-weight:700;font-size:12px;vertical-align:-3px}
+.ok{color:#7fe3d4;font-weight:700}
+.big{font-size:16px;padding:13px 22px}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;font-size:12.5px;color:var(--muted)}.feat div{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--line)}.feat b{display:block;color:var(--text);font-size:13px}
 @media (prefers-reduced-motion:reduce){#splash .logo,.bar i{animation:none}}
 </style>
 </head>
@@ -80,6 +92,21 @@ input{width:min(520px,90vw);padding:11px 13px;border-radius:10px;border:1px soli
   <div class="row"><button class="btn pri" id="urlSave">Simpan &amp; Buka</button></div>
 </div>
 
+<div class="layer" id="pasang">
+  <img class="logo" src="icons/logo.png" alt="">
+  <div class="brand">Aplikasi ORIENT</div>
+  <div class="sub">Pasang sekali, buka dari ikon seperti aplikasi biasa. Isi aplikasi selalu mengikuti versi terbaru portal secara otomatis.</div>
+  <div class="dev" id="devPil" role="tablist" aria-label="Pilih perangkat">
+    <button type="button" data-d="android">Android</button><button type="button" data-d="ios">iPhone / iPad</button><button type="button" data-d="desktop">Komputer</button>
+  </div>
+  <div class="card" id="pasangIsi"></div>
+  <div class="row"><button class="btn" id="lanjutWeb" type="button">Lanjut tanpa memasang</button></div>
+  <div class="feat" style="width:min(520px,94vw)">
+    <div><b>Selalu terbaru</b>Menu &amp; fitur baru langsung ikut tanpa download ulang.</div>
+    <div><b>Jendela sendiri</b>Tanpa bilah browser, ikon di layar utama / Start Menu.</div>
+  </div>
+</div>
+
 <div class="layer" id="offline">
   <div class="ico" aria-hidden="true">!</div>
   <div class="brand" style="font-size:19px">Tidak ada koneksi internet</div>
@@ -98,7 +125,7 @@ input{width:min(520px,90vw);padding:11px 13px;border-radius:10px;border:1px soli
 <div id="menu" role="menu">
   <button role="menuitem" data-a="reload">⟳ Muat ulang portal</button>
   <button role="menuitem" data-a="direct">↗ Buka langsung (tanpa bingkai)</button>
-  <button role="menuitem" data-a="install" id="mInstall" hidden>⬇ Pasang aplikasi di perangkat ini</button>
+  <button role="menuitem" data-a="install" id="mInstall">⬇ Pasang aplikasi di perangkat ini</button>
   <button role="menuitem" data-a="full" id="mFull">⛶ Layar penuh</button>
   <div class="sep"></div>
   <button role="menuitem" data-a="url">⚙ Ganti URL portal</button>
@@ -111,17 +138,22 @@ input{width:min(520px,90vw);padding:11px 13px;border-radius:10px;border:1px soli
 /* ============ PENGATURAN ============ */
 // Isi dengan URL Web App Apps Script Anda (berakhiran /exec). Kosongkan bila ingin diisi lewat layar "Atur Aplikasi".
 const APP_URL = '';
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 /* ==================================== */
 (function () {
   const $ = id => document.getElementById(id);
-  const frame = $('app'), lay = id => ['splash', 'setup', 'offline', 'slow'].forEach(x => $(x).classList.toggle('on', x === id));
+  const frame = $('app'), lay = id => ['splash', 'setup', 'offline', 'slow', 'pasang'].forEach(x => $(x).classList.toggle('on', x === id));
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
   const toast = (t, ms) => { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), ms || 3200); };
   const qs = new URLSearchParams(location.search);
   const valid = u => /^https:\/\/script\.google(usercontent)?\.com\/.+/i.test(u || '') || /^https:\/\/[^\s]+\/exec(\?.*)?$/i.test(u || '');
-  let url = qs.get('url') || store.get('orientUrl') || APP_URL;
-  if (qs.get('url') && valid(qs.get('url'))) store.set('orientUrl', qs.get('url'));
+  let url = (valid(qs.get('url')) && qs.get('url')) || store.get('orientUrl') || APP_URL;
+  if (valid(qs.get('url'))) store.set('orientUrl', qs.get('url'));
+  // alamat portal ikut tertulis di alamat halaman -> saat dipasang (terutama iPhone, penyimpanannya terpisah) aplikasi tetap tersambung
+  const tulisAlamat = () => { try { if (valid(url) && qs.get('url') !== url) { const q = new URLSearchParams(location.search); q.set('url', url); history.replaceState(null, '', location.pathname + '?' + q.toString() + location.hash); } } catch (e) {} };
+  tulisAlamat();
+  const standalone = () => { try { return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: minimal-ui)').matches || navigator.standalone === true; } catch (e) { return false; } };
+  const denganApp = u => u + (u.indexOf('?') > -1 ? '&' : '?') + 'app=1'; // portal tahu sedang dibuka dari aplikasi (tombol Download disembunyikan)
   $('ver').textContent = 'ORIENT App v' + APP_VERSION;
   let loaded = false, slowT = null;
 
@@ -130,7 +162,7 @@ const APP_VERSION = '1.0.0';
     if (!navigator.onLine) { lay('offline'); return; }
     if (store.get('orientMode') === 'direct') { location.replace(url); return; }
     loaded = false; lay('splash'); $('splashTxt').textContent = 'Memuat Portal Aftersales...';
-    frame.classList.remove('on'); frame.src = url;
+    frame.classList.remove('on'); frame.src = denganApp(url);
     clearTimeout(slowT); slowT = setTimeout(() => { if (!loaded) lay('slow'); }, 30000);
   }
   frame.addEventListener('load', () => {
@@ -159,8 +191,8 @@ const APP_VERSION = '1.0.0';
   fab.addEventListener('pointerup', () => { if (drag && moved) store.set('orientFab', JSON.stringify({ r: parseFloat(fab.style.right), b: parseFloat(fab.style.bottom) })); else { menu.classList.toggle('on'); fab.classList.toggle('open', menu.classList.contains('on')); } drag = null; });
   document.addEventListener('pointerdown', e => { if (!menu.contains(e.target) && e.target !== fab) { menu.classList.remove('on'); fab.classList.remove('open'); } });
   let deferred = null;
-  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; $('mInstall').hidden = false; });
-  window.addEventListener('appinstalled', () => { $('mInstall').hidden = true; toast('Aplikasi ORIENT terpasang. Buka dari layar utama / Start menu.', 5000); });
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; $('mInstall').hidden = false; if ($('pasang').classList.contains('on')) isiPasang(); });
+  window.addEventListener('appinstalled', () => { $('mInstall').hidden = true; store.set('orientPasangLihat', '1'); toast('Aplikasi ORIENT terpasang. Buka dari layar utama / Start menu.', 5000); });
   if (!document.fullscreenEnabled) $('mFull').hidden = true;
   menu.addEventListener('click', async e => {
     const b = e.target.closest('[data-a]'); if (!b) return; menu.classList.remove('on'); fab.classList.remove('open');
@@ -169,16 +201,54 @@ const APP_VERSION = '1.0.0';
     else if (a === 'direct') location.assign(url);
     else if (a === 'url') { lay('setup'); $('urlIn').value = url || ''; }
     else if (a === 'full') { try { document.fullscreenElement ? await document.exitFullscreen() : await document.documentElement.requestFullscreen(); } catch (x) {} }
+    else if (a === 'install' && !deferred) { lay('pasang'); isiPasang(); }
     else if (a === 'install' && deferred) { deferred.prompt(); const r = await deferred.userChoice; if (r.outcome === 'accepted') toast('Memasang aplikasi ORIENT...'); deferred = null; $('mInstall').hidden = true; }
+  });
+
+  /* ---- halaman pasang aplikasi (Android / iPhone / Komputer) ---- */
+  const ua = navigator.userAgent || '';
+  const devOtomatis = () => /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios' : /Android/i.test(ua) ? 'android' : 'desktop';
+  let dev = devOtomatis();
+  const iosNonSafari = /CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua), firefox = /Firefox/i.test(ua) && !/Seamonkey/i.test(ua), safariMac = /Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua);
+  function isiPasang() {
+    document.querySelectorAll('#devPil [data-d]').forEach(b => b.classList.toggle('on', b.dataset.d === dev));
+    const tombol = deferred && dev !== 'ios' ? '<div class="row" style="margin:6px 0 10px"><button class="btn pri big" id="pasangNow" type="button">⬇ Pasang Aplikasi</button></div>' : '';
+    let h = '';
+    if (dev === 'android') h = '<h2>Pasang di Android</h2>' + tombol + '<ol class="lg">' + (deferred ? '<li>Ketuk <b>Pasang Aplikasi</b> di atas, lalu <b>Instal</b>.</li>' : '<li>Buka halaman ini di <b>Chrome</b>.</li><li>Ketuk menu <span class="k">⋮</span> di pojok kanan atas.</li><li>Pilih <b>Instal aplikasi</b> / <b>Tambahkan ke layar utama</b> &rarr; <b>Instal</b>.</li>') + '<li>Buka ikon <b>ORIENT</b> di layar utama, lalu masuk seperti biasa.</li></ol>';
+    else if (dev === 'ios') h = '<h2>Pasang di iPhone / iPad</h2>' + (iosNonSafari ? '<div class="sub" style="margin:4px 0 6px">Bila langkah di bawah tidak tersedia, salin alamat halaman ini lalu buka di <b>Safari</b>.</div>' : '') + '<ol class="lg"><li>Ketuk ikon <b>Bagikan</b> <span class="k">⬆</span> (kotak dengan panah ke atas) di bilah bawah / atas Safari.</li><li>Gulir lalu pilih <b>Tambah ke Layar Utama</b> <span class="k">＋</span>.</li><li>Ketuk <b>Tambah</b>. Ikon <b>ORIENT</b> muncul di layar utama.</li><li>Buka dari ikon tersebut, lalu masuk seperti biasa.</li></ol>';
+    else h = '<h2>Pasang di Komputer</h2>' + tombol + '<ol class="lg">' + (deferred ? '<li>Klik <b>Pasang Aplikasi</b> di atas, lalu <b>Instal</b>.</li>' : firefox ? '<li>Firefox belum mendukung pemasangan aplikasi. Buka halaman ini di <b>Google Chrome</b> atau <b>Microsoft Edge</b>.</li>' : safariMac ? '<li>Di Safari (macOS Sonoma ke atas): menu <b>File</b> &rarr; <b>Tambahkan ke Dock</b>.</li>' : '<li>Klik ikon <b>pasang</b> <span class="k">⊕</span> di ujung kanan kolom alamat, atau menu <span class="k">⋮</span> &rarr; <b>Instal ORIENT</b> / <b>Aplikasi &rarr; Instal situs ini sebagai aplikasi</b>.</li>') + '<li>Aplikasi <b>ORIENT</b> tersedia di Start Menu / Desktop / Dock dan terbuka di jendelanya sendiri.</li></ol>';
+    if (!valid(url)) h += '<div class="err" style="margin-top:6px">Alamat portal belum ada. Buka halaman ini dari tombol <b>Download Aplikasi</b> di portal ORIENT, atau klik "Lanjut tanpa memasang" untuk mengisi alamat.</div>';
+    $('pasangIsi').innerHTML = h;
+    const pn = $('pasangNow'); if (pn) pn.addEventListener('click', pasangSekarang);
+  }
+  async function pasangSekarang() {
+    if (!deferred) return isiPasang();
+    deferred.prompt(); const r = await deferred.userChoice; deferred = null;
+    if (r && r.outcome === 'accepted') { $('pasangIsi').innerHTML = '<h2 class="ok">Aplikasi ORIENT sedang dipasang ✓</h2><div class="sub">Setelah selesai, buka dari ikon <b>ORIENT</b> di layar utama / Start Menu.</div>'; }
+    else isiPasang();
+  }
+  document.querySelectorAll('#devPil [data-d]').forEach(b => b.addEventListener('click', () => { dev = b.dataset.d; isiPasang(); }));
+  $('lanjutWeb').addEventListener('click', () => { store.set('orientPasangLihat', '1'); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} buka(); });
+  const perluPasang = () => !standalone() && (location.hash === '#pasang' || !store.get('orientPasangLihat'));
+
+  /* ---- portal meminta muat ulang (ada versi baru) ---- */
+  window.addEventListener('message', e => {
+    if (!/^https:\/\/([a-z0-9-]+\.)*(google\.com|googleusercontent\.com)$/i.test(e.origin || '')) return;
+    if (e.data && e.data.orient === 'muat-ulang') { toast('Memasang versi terbaru portal...'); buka(); }
   });
 
   /* service worker: buka cepat & tampil saat offline; pembaruan otomatis */
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    let adaBaru = false;
     navigator.serviceWorker.register('sw.js').then(reg => {
-      reg.addEventListener('updatefound', () => { const w = reg.installing; if (w) w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) toast('Versi baru aplikasi siap. Tutup lalu buka kembali aplikasi untuk memperbarui.', 6000); }); });
+      const cek = () => { try { reg.update(); } catch (e) {} };
+      cek(); setInterval(cek, 30 * 60 * 1000); document.addEventListener('visibilitychange', () => { if (!document.hidden) cek(); });
     }).catch(() => {});
+    // versi bingkai baru aktif: dipakai otomatis (dimuat ulang saat aplikasi tidak sedang dilihat, atau langsung bila portal belum terbuka)
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!loaded) location.reload(); else adaBaru = true; });
+    document.addEventListener('visibilitychange', () => { if (document.hidden && adaBaru) { adaBaru = false; location.reload(); } });
   }
-  buka();
+  if (perluPasang()) { lay('pasang'); isiPasang(); } else buka();
 })();
 </script>
 </body>
