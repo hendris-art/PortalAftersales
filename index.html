@@ -138,7 +138,7 @@ ol.lg{margin:10px 0 4px;padding-left:22px;line-height:1.6}ol.lg li{margin-bottom
 /* ============ PENGATURAN ============ */
 // Isi dengan URL Web App Apps Script Anda (berakhiran /exec). Kosongkan bila ingin diisi lewat layar "Atur Aplikasi".
 const APP_URL = '';
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 /* ==================================== */
 (function () {
   const $ = id => document.getElementById(id);
@@ -152,7 +152,7 @@ const APP_VERSION = '1.2.0';
   // alamat portal ikut tertulis di alamat halaman -> saat dipasang (terutama iPhone, penyimpanannya terpisah) aplikasi tetap tersambung
   const tulisAlamat = () => { try { if (valid(url) && qs.get('url') !== url) { const q = new URLSearchParams(location.search); q.set('url', url); history.replaceState(null, '', location.pathname + '?' + q.toString() + location.hash); } } catch (e) {} };
   tulisAlamat();
-  const standalone = () => { try { return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: minimal-ui)').matches || navigator.standalone === true; } catch (e) { return false; } };
+  const standalone = () => { try { return qs.get('src') === 'win' || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: minimal-ui)').matches || navigator.standalone === true; } catch (e) { return false; } };
   const denganApp = u => u + (u.indexOf('?') > -1 ? '&' : '?') + 'app=1'; // portal tahu sedang dibuka dari aplikasi (tombol Download disembunyikan)
   $('ver').textContent = 'ORIENT App v' + APP_VERSION;
   let loaded = false, slowT = null;
@@ -219,6 +219,38 @@ const APP_VERSION = '1.2.0';
     const masalah = '<div class="sub" style="margin-top:8px;font-size:12.5px"><b>Menu Instal tidak ada?</b> Pastikan bukan jendela <b>Penyamaran / InPrivate / Tamu</b>, halaman dibuka dari alamat <b>hendris-art.github.io</b>, dan browser sudah versi terbaru. Bila ORIENT sudah pernah dipasang, buka langsung dari <b>Start Menu</b> (ketik "ORIENT"). Komputer kantor yang dikunci IT bisa memblokir pemasangan aplikasi.</div>';
     return (edge ? e + c : c + e) + masalah;
   }
+  /* ---- Windows: pemasang (Pasang-ORIENT.cmd) -> pintasan ORIENT di Desktop & Start Menu, jendela aplikasi via Edge/Chrome ---- */
+  const windows = /Windows/i.test(ua);
+  function unduhWindows() {
+    const dasar = location.origin + location.pathname.replace(/[^/]*$/, '');
+    const appUrl = dasar + (valid(url) ? '?url=' + encodeURIComponent(url) + '&src=win' : '?src=win');
+    const q = x => String(x).replace(/'/g, "''"); // tanda kutip tunggal PowerShell
+    const ps = [
+      "$ErrorActionPreference='Continue'",
+      "$url='" + q(appUrl) + "'",
+      "$ico='" + q(dasar + 'icons/orient.ico') + "'",
+      "$dir=Join-Path $env:LOCALAPPDATA 'ORIENT'",
+      "New-Item -ItemType Directory -Force -Path $dir | Out-Null",
+      "$icoPath=Join-Path $dir 'orient.ico'",
+      "try { [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri $ico -OutFile $icoPath } catch { }",
+      "$c=@(\"${env:ProgramFiles(x86)}\\Microsoft\\Edge\\Application\\msedge.exe\",\"$env:ProgramFiles\\Microsoft\\Edge\\Application\\msedge.exe\",\"$env:ProgramFiles\\Google\\Chrome\\Application\\chrome.exe\",\"${env:ProgramFiles(x86)}\\Google\\Chrome\\Application\\chrome.exe\",\"$env:LOCALAPPDATA\\Google\\Chrome\\Application\\chrome.exe\")",
+      "$exe=$c | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1",
+      "if (-not $exe) { Write-Host 'Microsoft Edge / Google Chrome tidak ditemukan di komputer ini.'; exit 1 }",
+      "$ws=New-Object -ComObject WScript.Shell",
+      "$tujuan=@([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs'))",
+      "foreach ($t in $tujuan) { $l=$ws.CreateShortcut((Join-Path $t 'ORIENT.lnk')); $l.TargetPath=$exe; $l.Arguments='--app=\"' + $url + '\"'; $l.WorkingDirectory=$dir; if (Test-Path $icoPath) { $l.IconLocation=$icoPath + ',0' }; $l.Description='ORIENT Aftersales'; $l.Save() }",
+      "Write-Host ''; Write-Host 'Aplikasi ORIENT berhasil dipasang:' -ForegroundColor Green; Write-Host ' - Ikon ORIENT di Desktop'; Write-Host ' - ORIENT di Start Menu (ketik ORIENT)'; Write-Host ''",
+      "Start-Process -FilePath $exe -ArgumentList ('--app=\"' + $url + '\"')"
+    ].join('\n');
+    let bin = ''; for (let i = 0; i < ps.length; i++) { const k = ps.charCodeAt(i); bin += String.fromCharCode(k & 255, k >> 8); } // UTF-16LE untuk -EncodedCommand
+    const cmd = ['@echo off', 'title Pasang Aplikasi ORIENT', 'echo.', 'echo   Memasang aplikasi ORIENT Aftersales...', 'echo.',
+      'powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ' + btoa(bin), 'echo.', 'echo   Selesai. Jendela ini boleh ditutup.', 'timeout /t 8 >nul'].join('\r\n') + '\r\n';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([cmd], { type: 'application/octet-stream' })); a.download = 'Pasang-ORIENT.cmd';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    const w = $('winInfo'); if (w) w.style.display = '';
+  }
+  const tombolWindows = () => '<div class="row" style="margin:4px 0 8px"><button class="btn big" id="unduhWin" type="button">🪟 Download untuk Windows</button></div>'
+    + '<div id="winInfo" class="sub" style="display:none;text-align:left;font-size:12.5px;margin:0 0 8px"><b>Setelah file Pasang-ORIENT.cmd terunduh:</b><ol class="lg" style="margin-top:4px"><li>Buka file itu (klik dua kali di bilah unduhan / folder <b>Unduhan</b>). Bila browser bertanya, pilih <b>Simpan / Tetap simpan</b>.</li><li>Bila muncul <b>"Windows melindungi PC Anda"</b>: klik <b>Info selengkapnya</b> &rarr; <b>Tetap jalankan</b>.</li><li>Tunggu beberapa detik: ikon <b>ORIENT</b> muncul di Desktop &amp; Start Menu, dan aplikasi langsung terbuka di jendelanya sendiri.</li></ol></div>';
   function isiPasang() {
     document.querySelectorAll('#devPil [data-d]').forEach(b => b.classList.toggle('on', b.dataset.d === dev));
     let h = '';
@@ -228,6 +260,7 @@ const APP_VERSION = '1.2.0';
     else {
       h = '<h2>' + (dev === 'android' ? 'Pasang di Android' : 'Pasang di Komputer') + '</h2>'
         + '<div class="row" style="margin:8px 0 6px"><button class="btn pri big" id="pasangNow" type="button">⬇ Pasang Aplikasi</button></div>'
+        + (dev === 'desktop' && windows ? '<div class="sub" style="text-align:center;margin:2px 0 4px">atau, bila tombol di atas tidak berhasil:</div>' + tombolWindows() : '')
         + (deferred ? '<div class="sub" style="text-align:center">Klik tombol di atas, lalu pilih <b>Instal</b>.</div>' : '')
         + (manual || !deferred ? '<div id="pasangManual" style="' + (manual ? '' : 'display:none') + '">' + langkahManual() + '</div>' : '')
         + '<div class="sub" style="text-align:center;margin-top:6px">Setelah terpasang, buka dari ikon <b>ORIENT</b> di ' + (dev === 'android' ? 'layar utama' : 'Start Menu / Desktop / taskbar') + '.</div>';
@@ -235,6 +268,7 @@ const APP_VERSION = '1.2.0';
     if (!valid(url)) h += '<div class="err" style="margin-top:6px">Alamat portal belum ada. Buka halaman ini dari tombol <b>Download Aplikasi</b> di portal ORIENT, atau klik "Lanjut tanpa memasang" untuk mengisi alamat.</div>';
     $('pasangIsi').innerHTML = h;
     const pn = $('pasangNow'); if (pn) pn.addEventListener('click', pasangSekarang);
+    const uw = $('unduhWin'); if (uw) uw.addEventListener('click', unduhWindows);
   }
   async function pasangSekarang() {
     if (!deferred) { // browser belum memberi izin pasang otomatis -> tampilkan langkah persis sesuai browser
