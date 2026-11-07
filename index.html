@@ -138,7 +138,7 @@ ol.lg{margin:10px 0 4px;padding-left:22px;line-height:1.6}ol.lg li{margin-bottom
 /* ============ PENGATURAN ============ */
 // Isi dengan URL Web App Apps Script Anda (berakhiran /exec). Kosongkan bila ingin diisi lewat layar "Atur Aplikasi".
 const APP_URL = '';
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 /* ==================================== */
 (function () {
   const $ = id => document.getElementById(id);
@@ -210,19 +210,37 @@ const APP_VERSION = '1.1.0';
   const devOtomatis = () => /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios' : /Android/i.test(ua) ? 'android' : 'desktop';
   let dev = devOtomatis();
   const iosNonSafari = /CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua), firefox = /Firefox/i.test(ua) && !/Seamonkey/i.test(ua), safariMac = /Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua);
+  const edge = /Edg\//.test(ua), chromeDesk = /Chrome\//.test(ua) && !edge && !/OPR\//.test(ua);
+  let manual = false;
+  function langkahManual() {
+    if (dev === 'android') return '<ol class="lg"><li>Ketuk menu <span class="k">⋮</span> di pojok kanan atas Chrome.</li><li>Pilih <b>Instal aplikasi</b> (atau <b>Tambahkan ke layar utama</b> &rarr; <b>Instal</b>).</li><li>Ikon <b>ORIENT</b> muncul di layar utama.</li></ol>';
+    const c = '<b>Google Chrome:</b><ol class="lg"><li>Lihat ujung <b>kanan kolom alamat</b>: klik ikon <span class="k">🖥⬇</span> <b>Instal ORIENT</b>, lalu <b>Instal</b>.</li><li>Bila ikon itu tidak ada: klik menu <span class="k">⋮</span> (pojok kanan atas) &rarr; <b>Transmisikan, simpan, dan bagikan</b> &rarr; <b>Instal ORIENT Aftersales…</b> &rarr; <b>Instal</b>.<br><small style="color:var(--muted)">Chrome berbahasa Inggris: ⋮ &rarr; Cast, save, and share &rarr; Install ORIENT Aftersales…</small></li></ol>';
+    const e = '<b>Microsoft Edge:</b><ol class="lg"><li>Klik ikon <span class="k">⊕</span> <b>Aplikasi tersedia</b> di ujung kanan kolom alamat, lalu <b>Instal</b>.</li><li>Atau klik menu <span class="k">⋯</span> &rarr; <b>Aplikasi</b> &rarr; <b>Instal situs ini sebagai aplikasi</b> &rarr; <b>Instal</b>.</li></ol>';
+    const masalah = '<div class="sub" style="margin-top:8px;font-size:12.5px"><b>Menu Instal tidak ada?</b> Pastikan bukan jendela <b>Penyamaran / InPrivate / Tamu</b>, halaman dibuka dari alamat <b>hendris-art.github.io</b>, dan browser sudah versi terbaru. Bila ORIENT sudah pernah dipasang, buka langsung dari <b>Start Menu</b> (ketik "ORIENT"). Komputer kantor yang dikunci IT bisa memblokir pemasangan aplikasi.</div>';
+    return (edge ? e + c : c + e) + masalah;
+  }
   function isiPasang() {
     document.querySelectorAll('#devPil [data-d]').forEach(b => b.classList.toggle('on', b.dataset.d === dev));
-    const tombol = deferred && dev !== 'ios' ? '<div class="row" style="margin:6px 0 10px"><button class="btn pri big" id="pasangNow" type="button">⬇ Pasang Aplikasi</button></div>' : '';
     let h = '';
-    if (dev === 'android') h = '<h2>Pasang di Android</h2>' + tombol + '<ol class="lg">' + (deferred ? '<li>Ketuk <b>Pasang Aplikasi</b> di atas, lalu <b>Instal</b>.</li>' : '<li>Buka halaman ini di <b>Chrome</b>.</li><li>Ketuk menu <span class="k">⋮</span> di pojok kanan atas.</li><li>Pilih <b>Instal aplikasi</b> / <b>Tambahkan ke layar utama</b> &rarr; <b>Instal</b>.</li>') + '<li>Buka ikon <b>ORIENT</b> di layar utama, lalu masuk seperti biasa.</li></ol>';
-    else if (dev === 'ios') h = '<h2>Pasang di iPhone / iPad</h2>' + (iosNonSafari ? '<div class="sub" style="margin:4px 0 6px">Bila langkah di bawah tidak tersedia, salin alamat halaman ini lalu buka di <b>Safari</b>.</div>' : '') + '<ol class="lg"><li>Ketuk ikon <b>Bagikan</b> <span class="k">⬆</span> (kotak dengan panah ke atas) di bilah bawah / atas Safari.</li><li>Gulir lalu pilih <b>Tambah ke Layar Utama</b> <span class="k">＋</span>.</li><li>Ketuk <b>Tambah</b>. Ikon <b>ORIENT</b> muncul di layar utama.</li><li>Buka dari ikon tersebut, lalu masuk seperti biasa.</li></ol>';
-    else h = '<h2>Pasang di Komputer</h2>' + tombol + '<ol class="lg">' + (deferred ? '<li>Klik <b>Pasang Aplikasi</b> di atas, lalu <b>Instal</b>.</li>' : firefox ? '<li>Firefox belum mendukung pemasangan aplikasi. Buka halaman ini di <b>Google Chrome</b> atau <b>Microsoft Edge</b>.</li>' : safariMac ? '<li>Di Safari (macOS Sonoma ke atas): menu <b>File</b> &rarr; <b>Tambahkan ke Dock</b>.</li>' : '<li>Klik ikon <b>pasang</b> <span class="k">⊕</span> di ujung kanan kolom alamat, atau menu <span class="k">⋮</span> &rarr; <b>Instal ORIENT</b> / <b>Aplikasi &rarr; Instal situs ini sebagai aplikasi</b>.</li>') + '<li>Aplikasi <b>ORIENT</b> tersedia di Start Menu / Desktop / Dock dan terbuka di jendelanya sendiri.</li></ol>';
+    if (dev === 'ios') h = '<h2>Pasang di iPhone / iPad</h2>' + (iosNonSafari ? '<div class="sub" style="margin:4px 0 6px">Bila langkah di bawah tidak tersedia, salin alamat halaman ini lalu buka di <b>Safari</b>.</div>' : '') + '<ol class="lg"><li>Ketuk ikon <b>Bagikan</b> <span class="k">⬆</span> (kotak dengan panah ke atas) di bilah bawah / atas Safari.</li><li>Gulir lalu pilih <b>Tambah ke Layar Utama</b> <span class="k">＋</span>.</li><li>Ketuk <b>Tambah</b>. Ikon <b>ORIENT</b> muncul di layar utama.</li><li>Buka dari ikon tersebut, lalu masuk seperti biasa.</li></ol>';
+    else if (dev === 'desktop' && firefox) h = '<h2>Pasang di Komputer</h2><ol class="lg"><li>Firefox belum mendukung pemasangan aplikasi. Buka alamat halaman ini di <b>Google Chrome</b> atau <b>Microsoft Edge</b>, lalu klik <b>Pasang Aplikasi</b>.</li></ol>';
+    else if (dev === 'desktop' && safariMac) h = '<h2>Pasang di Mac (Safari)</h2><ol class="lg"><li>Menu <b>File</b> &rarr; <b>Tambahkan ke Dock</b> (macOS Sonoma ke atas).</li><li>Atau buka halaman ini di Google Chrome / Microsoft Edge.</li></ol>';
+    else {
+      h = '<h2>' + (dev === 'android' ? 'Pasang di Android' : 'Pasang di Komputer') + '</h2>'
+        + '<div class="row" style="margin:8px 0 6px"><button class="btn pri big" id="pasangNow" type="button">⬇ Pasang Aplikasi</button></div>'
+        + (deferred ? '<div class="sub" style="text-align:center">Klik tombol di atas, lalu pilih <b>Instal</b>.</div>' : '')
+        + (manual || !deferred ? '<div id="pasangManual" style="' + (manual ? '' : 'display:none') + '">' + langkahManual() + '</div>' : '')
+        + '<div class="sub" style="text-align:center;margin-top:6px">Setelah terpasang, buka dari ikon <b>ORIENT</b> di ' + (dev === 'android' ? 'layar utama' : 'Start Menu / Desktop / taskbar') + '.</div>';
+    }
     if (!valid(url)) h += '<div class="err" style="margin-top:6px">Alamat portal belum ada. Buka halaman ini dari tombol <b>Download Aplikasi</b> di portal ORIENT, atau klik "Lanjut tanpa memasang" untuk mengisi alamat.</div>';
     $('pasangIsi').innerHTML = h;
     const pn = $('pasangNow'); if (pn) pn.addEventListener('click', pasangSekarang);
   }
   async function pasangSekarang() {
-    if (!deferred) return isiPasang();
+    if (!deferred) { // browser belum memberi izin pasang otomatis -> tampilkan langkah persis sesuai browser
+      manual = true; isiPasang(); const m = $('pasangManual'); if (m) { m.style.display = ''; m.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      return;
+    }
     deferred.prompt(); const r = await deferred.userChoice; deferred = null;
     if (r && r.outcome === 'accepted') { $('pasangIsi').innerHTML = '<h2 class="ok">Aplikasi ORIENT sedang dipasang ✓</h2><div class="sub">Setelah selesai, buka dari ikon <b>ORIENT</b> di layar utama / Start Menu.</div>'; }
     else isiPasang();
