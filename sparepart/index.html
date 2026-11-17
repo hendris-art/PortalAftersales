@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orient Sparepart</title>
+<meta name="description" content="Sparepart &amp; Inventory Management System — Orient Aftersales">
+<meta name="theme-color" content="#16284d">
+<meta name="application-name" content="Orient Sparepart">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sparepart">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+/* ============================================================
+   Orient Sparepart - aplikasi (PWA) pembungkus web app Apps Script SPAREPART & INVENTORY.
+   ALAMAT PORTAL otomatis terbawa dari tombol "Download Aplikasi" di portal (parameter ?url=). APP_URL di bawah boleh diisi URL Web App
+   yang berakhiran /exec. Bila dikosongkan, aplikasi akan meminta URL saat pertama dibuka.
+   ============================================================ */
+:root{--bg:#121a2c;--panel:#18233a;--line:#2a3a58;--text:#e6eaf2;--muted:#9aa6bd;--accent:#c9844f;--teal:#5a7fb8}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.45 Inter,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#app{position:fixed;inset:0;width:100%;height:100%;border:0;background:var(--bg);opacity:0;transition:opacity .35s}
+#app.on{opacity:1}
+.layer{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 40%,#1c2a48 0,#121a2c 62%)}
+.layer.on{display:flex}
+.logo{width:96px;height:96px;border-radius:22px;filter:drop-shadow(0 10px 26px rgba(0,0,0,.45))}
+#splash .logo{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.07);opacity:.85}}
+.brand{font-size:22px;font-weight:800;letter-spacing:.06em}
+.sub{color:var(--muted);max-width:420px}
+.bar{width:180px;height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,var(--teal),var(--accent));border-radius:2px;animation:load 1.2s ease-in-out infinite}
+@keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+.btn{appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:600 14px inherit;font-family:inherit;padding:10px 18px;border-radius:10px;cursor:pointer}
+.btn.pri{background:linear-gradient(135deg,#d4935e,#b8733f);border-color:#d4935e;color:#1b1206}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+input{width:min(520px,90vw);padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#081a24;color:var(--text);font:14px inherit;font-family:inherit}
+.err{color:#ffb3b1;font-size:13px;min-height:18px}
+.ico{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:rgba(201,132,79,.14);border:1.5px solid #d4935e;color:#d4935e;font-size:30px}
+/* tombol menu kecil (bisa digeser) */
+#fab{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:44px;height:44px;border-radius:50%;border:1px solid rgba(201,132,79,.6);background:rgba(18,26,44,.92);display:none;place-items:center;cursor:pointer;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.45);touch-action:none;opacity:.55;transition:opacity .2s}
+#fab:hover,#fab.open{opacity:1}
+#fab.on{display:grid}
+#fab img{width:26px;height:26px;pointer-events:none}
+#menu{position:fixed;right:14px;bottom:calc(66px + env(safe-area-inset-bottom));min-width:230px;background:#18233a;border:1px solid var(--line);border-radius:12px;padding:6px;display:none;z-index:21;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+#menu.on{display:block}
+#menu button{display:flex;gap:10px;align-items:center;width:100%;background:none;border:0;color:var(--text);font:14px inherit;font-family:inherit;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer}
+#menu button:hover{background:rgba(255,255,255,.06)}
+#menu button[hidden]{display:none}
+#menu .sep{height:1px;background:var(--line);margin:4px 2px}
+#menu small{display:block;color:var(--muted);font-size:11.5px;padding:6px 12px 4px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#18233a;border:1px solid var(--line);padding:10px 16px;border-radius:10px;display:none;z-index:30;max-width:90vw}
+#toast.on{display:block}
+#net{position:fixed;top:0;left:0;right:0;padding:6px 12px;text-align:center;font-size:12.5px;font-weight:600;background:#c0392b;color:#fff;transform:translateY(-100%);transition:transform .25s;z-index:25;padding-top:calc(6px + env(safe-area-inset-top))}
+#net.on{transform:none}
+/* halaman pasang aplikasi */
+#pasang{justify-content:flex-start;overflow:auto;padding-top:calc(28px + env(safe-area-inset-top))}
+.card{width:min(520px,94vw);background:rgba(24,35,58,.94);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;text-align:left}
+.card h2{margin:0 0 4px;font-size:18px}.card .sub{max-width:none}
+.dev{display:flex;gap:6px;justify-content:center;margin:2px 0 4px;flex-wrap:wrap}
+.dev button{appearance:none;border:1px solid var(--line);background:none;color:var(--muted);font:600 12.5px inherit;font-family:inherit;padding:6px 12px;border-radius:20px;cursor:pointer}
+.dev button.on{background:rgba(90,127,184,.2);border-color:var(--teal);color:var(--text)}
+ol.lg{margin:10px 0 4px;padding-left:22px;line-height:1.6}ol.lg li{margin-bottom:8px}
+.k{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.1);border:1px solid var(--line);font-weight:700;font-size:12px;vertical-align:-3px}
+.ok{color:#9cc0f0;font-weight:700}
+.big{font-size:16px;padding:13px 22px}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;font-size:12.5px;color:var(--muted)}.feat div{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--line)}.feat b{display:block;color:var(--text);font-size:13px}
+@media (prefers-reduced-motion:reduce){#splash .logo,.bar i{animation:none}}
+</style>
+</head>
+<body>
+<iframe id="app" title="Orient Sparepart" allow="clipboard-read; clipboard-write; fullscreen; geolocation; camera; microphone" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+
+<div class="layer on" id="splash" role="status" aria-live="polite">
+  <img class="logo" src="icons/logo.png" alt="">
+  <div class="brand">ORIENT SPAREPART</div>
+  <div class="sub" id="splashTxt">Memuat Orient Sparepart...</div>
+  <div class="bar"><i></i></div>
+</div>
+
+<div class="layer" id="setup">
+  <img class="logo" src="icons/logo.png" alt="">
+  <div class="brand">Atur Aplikasi Orient Sparepart</div>
+  <div class="sub">Tempel URL Web App portal (dari Apps Script: Deploy → Manage deployments → salin URL yang berakhiran <b>/exec</b>). Cukup sekali; URL tersimpan di perangkat ini.</div>
+  <input id="urlIn" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" spellcheck="false">
+  <div class="err" id="urlErr"></div>
+  <div class="row"><button class="btn pri" id="urlSave">Simpan &amp; Buka</button></div>
+</div>
+
+<div class="layer" id="pasang">
+  <img class="logo" src="icons/logo.png" alt="">
+  <div class="brand">Aplikasi Orient Sparepart</div>
+  <div class="sub">Pasang sekali, buka dari ikon seperti aplikasi biasa. Isi aplikasi selalu mengikuti versi terbaru portal secara otomatis.</div>
+  <div class="dev" id="devPil" role="tablist" aria-label="Pilih perangkat">
+    <button type="button" data-d="android">Android</button><button type="button" data-d="ios">iPhone / iPad</button><button type="button" data-d="desktop">Komputer</button>
+  </div>
+  <div class="card" id="pasangIsi"></div>
+  <div class="row"><button class="btn" id="lanjutWeb" type="button">Lanjut tanpa memasang</button></div>
+  <div class="feat" style="width:min(520px,94vw)">
+    <div><b>Selalu terbaru</b>Menu &amp; fitur baru langsung ikut tanpa download ulang.</div>
+    <div><b>Jendela sendiri</b>Tanpa bilah browser, ikon di layar utama / Start Menu.</div>
+  </div>
+</div>
+
+<div class="layer" id="offline">
+  <div class="ico" aria-hidden="true">!</div>
+  <div class="brand" style="font-size:19px">Tidak ada koneksi internet</div>
+  <div class="sub">Aplikasi akan terbuka otomatis begitu koneksi kembali.</div>
+  <div class="row"><button class="btn pri" id="retry">Coba Lagi</button></div>
+</div>
+
+<div class="layer" id="slow">
+  <div class="ico" aria-hidden="true">⏳</div>
+  <div class="brand" style="font-size:19px">Portal belum terbuka</div>
+  <div class="sub">Koneksi lambat atau akun Google perlu masuk ulang. Coba muat ulang, atau buka langsung (tanpa bingkai aplikasi).</div>
+  <div class="row"><button class="btn" id="slowDirect">Buka Langsung</button><button class="btn pri" id="slowRetry">Muat Ulang</button></div>
+</div>
+
+<button id="fab" type="button" aria-label="Menu aplikasi Orient Sparepart" aria-haspopup="menu" title="Menu aplikasi (bisa digeser)"><img src="icons/logo.png" alt=""></button>
+<div id="menu" role="menu">
+  <button role="menuitem" data-a="reload">⟳ Muat ulang portal</button>
+  <button role="menuitem" data-a="direct">↗ Buka langsung (tanpa bingkai)</button>
+  <button role="menuitem" data-a="install" id="mInstall">⬇ Pasang aplikasi di perangkat ini</button>
+  <button role="menuitem" data-a="full" id="mFull">⛶ Layar penuh</button>
+  <div class="sep"></div>
+  <button role="menuitem" data-a="url">⚙ Ganti URL portal</button>
+  <small id="ver">Orient Sparepart v1</small>
+</div>
+<div id="net">Koneksi internet terputus — perubahan akan gagal disimpan sampai koneksi kembali.</div>
+<div id="toast"></div>
+
+<script>
+/* ============ PENGATURAN ============ */
+// Isi dengan URL Web App Apps Script Anda (berakhiran /exec). Kosongkan bila ingin diisi lewat layar "Atur Aplikasi".
+const APP_URL = 'https://script.google.com/macros/s/AKfycbyHQDAsb4DXhZeUK9ogyBjUAG6BUhjPUwWmYwvG0aQ-Mebu9ZKhgJs8_6ANiUQ2CoSH/exec';
+const APP_VERSION = '1.0.0';
+/* ==================================== */
+(function () {
+  const $ = id => document.getElementById(id);
+  const frame = $('app'), lay = id => ['splash', 'setup', 'offline', 'slow', 'pasang'].forEach(x => $(x).classList.toggle('on', x === id));
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const toast = (t, ms) => { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('on'), ms || 3200); };
+  const qs = new URLSearchParams(location.search);
+  const valid = u => /^https:\/\/script\.google(usercontent)?\.com\/.+/i.test(u || '') || /^https:\/\/[^\s]+\/exec(\?.*)?$/i.test(u || '');
+  let url = (valid(qs.get('url')) && qs.get('url')) || store.get('ospUrl') || APP_URL;
+  if (valid(qs.get('url'))) store.set('ospUrl', qs.get('url'));
+  // alamat portal ikut tertulis di alamat halaman -> saat dipasang (terutama iPhone, penyimpanannya terpisah) aplikasi tetap tersambung
+  const tulisAlamat = () => { try { if (valid(url) && qs.get('url') !== url) { const q = new URLSearchParams(location.search); q.set('url', url); history.replaceState(null, '', location.pathname + '?' + q.toString() + location.hash); } } catch (e) {} };
+  tulisAlamat();
+  const standalone = () => { try { return qs.get('src') === 'win' || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: minimal-ui)').matches || navigator.standalone === true; } catch (e) { return false; } };
+  const denganApp = u => u + (u.indexOf('?') > -1 ? '&' : '?') + 'app=1'; // portal tahu sedang dibuka dari aplikasi (tombol Download disembunyikan)
+  $('ver').textContent = 'Orient Sparepart v' + APP_VERSION;
+  let loaded = false, slowT = null;
+
+  function buka() {
+    if (!valid(url)) { lay('setup'); $('urlIn').value = url || ''; setTimeout(() => $('urlIn').focus(), 50); return; }
+    if (!navigator.onLine) { lay('offline'); return; }
+    if (store.get('ospMode') === 'direct') { location.replace(url); return; }
+    loaded = false; lay('splash'); $('splashTxt').textContent = 'Memuat Orient Sparepart...';
+    frame.classList.remove('on'); frame.src = denganApp(url);
+    clearTimeout(slowT); slowT = setTimeout(() => { if (!loaded) lay('slow'); }, 30000);
+  }
+  frame.addEventListener('load', () => {
+    if (!frame.src || frame.src === 'about:blank') return;
+    loaded = true; clearTimeout(slowT); lay(null); frame.classList.add('on'); $('fab').classList.add('on');
+  });
+  $('urlSave').addEventListener('click', () => {
+    const v = $('urlIn').value.trim();
+    if (!valid(v)) { $('urlErr').textContent = 'URL belum sesuai. Gunakan URL Web App yang berakhiran /exec.'; return; }
+    url = v; store.set('ospUrl', v); $('urlErr').textContent = ''; buka();
+  });
+  $('urlIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('urlSave').click(); });
+  $('retry').addEventListener('click', buka);
+  $('slowRetry').addEventListener('click', buka);
+  $('slowDirect').addEventListener('click', () => location.assign(url));
+  window.addEventListener('online', () => { $('net').classList.remove('on'); if (!loaded) buka(); else toast('Koneksi kembali tersambung.'); });
+  window.addEventListener('offline', () => { if (loaded) $('net').classList.add('on'); else lay('offline'); });
+
+  /* menu + tombol yang bisa digeser */
+  const fab = $('fab'), menu = $('menu');
+  let drag = null, moved = false;
+  const pos = store.get('ospFab'); if (pos) { try { const p = JSON.parse(pos); fab.style.right = p.r + 'px'; fab.style.bottom = p.b + 'px'; } catch (e) {} }
+  fab.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, r: parseFloat(getComputedStyle(fab).right), b: parseFloat(getComputedStyle(fab).bottom) }; moved = false; fab.setPointerCapture(e.pointerId); });
+  fab.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 6) moved = true; if (!moved) return;
+    const r = Math.min(innerWidth - 50, Math.max(4, drag.r - dx)), b = Math.min(innerHeight - 50, Math.max(4, drag.b - dy)); fab.style.right = r + 'px'; fab.style.bottom = b + 'px'; menu.style.right = r + 'px'; menu.style.bottom = (b + 52) + 'px'; });
+  fab.addEventListener('pointerup', () => { if (drag && moved) store.set('ospFab', JSON.stringify({ r: parseFloat(fab.style.right), b: parseFloat(fab.style.bottom) })); else { menu.classList.toggle('on'); fab.classList.toggle('open', menu.classList.contains('on')); } drag = null; });
+  document.addEventListener('pointerdown', e => { if (!menu.contains(e.target) && e.target !== fab) { menu.classList.remove('on'); fab.classList.remove('open'); } });
+  let deferred = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; $('mInstall').hidden = false; if ($('pasang').classList.contains('on')) isiPasang(); });
+  window.addEventListener('appinstalled', () => { $('mInstall').hidden = true; store.set('ospPasangLihat', '1'); toast('Aplikasi Orient Sparepart terpasang. Buka dari layar utama / Start menu.', 5000); });
+  if (!document.fullscreenEnabled) $('mFull').hidden = true;
+  menu.addEventListener('click', async e => {
+    const b = e.target.closest('[data-a]'); if (!b) return; menu.classList.remove('on'); fab.classList.remove('open');
+    const a = b.dataset.a;
+    if (a === 'reload') buka();
+    else if (a === 'direct') location.assign(url);
+    else if (a === 'url') { lay('setup'); $('urlIn').value = url || ''; }
+    else if (a === 'full') { try { document.fullscreenElement ? await document.exitFullscreen() : await document.documentElement.requestFullscreen(); } catch (x) {} }
+    else if (a === 'install' && !deferred) { lay('pasang'); isiPasang(); }
+    else if (a === 'install' && deferred) { deferred.prompt(); const r = await deferred.userChoice; if (r.outcome === 'accepted') toast('Memasang aplikasi Orient Sparepart...'); deferred = null; $('mInstall').hidden = true; }
+  });
+
+  /* ---- halaman pasang aplikasi (Android / iPhone / Komputer) ---- */
+  const ua = navigator.userAgent || '';
+  const devOtomatis = () => /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios' : /Android/i.test(ua) ? 'android' : 'desktop';
+  let dev = devOtomatis();
+  const iosNonSafari = /CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua), firefox = /Firefox/i.test(ua) && !/Seamonkey/i.test(ua), safariMac = /Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua);
+  const edge = /Edg\//.test(ua), chromeDesk = /Chrome\//.test(ua) && !edge && !/OPR\//.test(ua);
+  let manual = false;
+  function langkahManual() {
+    if (dev === 'android') return '<ol class="lg"><li>Ketuk menu <span class="k">⋮</span> di pojok kanan atas Chrome.</li><li>Pilih <b>Instal aplikasi</b> (atau <b>Tambahkan ke layar utama</b> &rarr; <b>Instal</b>).</li><li>Ikon <b>Orient Sparepart</b> muncul di layar utama.</li></ol>';
+    const c = '<b>Google Chrome:</b><ol class="lg"><li>Lihat ujung <b>kanan kolom alamat</b>: klik ikon <span class="k">🖥⬇</span> <b>Instal Orient Sparepart</b>, lalu <b>Instal</b>.</li><li>Bila ikon itu tidak ada: klik menu <span class="k">⋮</span> (pojok kanan atas) &rarr; <b>Transmisikan, simpan, dan bagikan</b> &rarr; <b>Instal Orient Sparepart…</b> &rarr; <b>Instal</b>.<br><small style="color:var(--muted)">Chrome berbahasa Inggris: ⋮ &rarr; Cast, save, and share &rarr; Install Orient Sparepart…</small></li></ol>';
+    const e = '<b>Microsoft Edge:</b><ol class="lg"><li>Klik ikon <span class="k">⊕</span> <b>Aplikasi tersedia</b> di ujung kanan kolom alamat, lalu <b>Instal</b>.</li><li>Atau klik menu <span class="k">⋯</span> &rarr; <b>Aplikasi</b> &rarr; <b>Instal situs ini sebagai aplikasi</b> &rarr; <b>Instal</b>.</li></ol>';
+    const masalah = '<div class="sub" style="margin-top:8px;font-size:12.5px"><b>Menu Instal tidak ada?</b> Pastikan bukan jendela <b>Penyamaran / InPrivate / Tamu</b>, halaman dibuka dari alamat <b>hendris-art.github.io</b>, dan browser sudah versi terbaru. Bila Orient Sparepart sudah pernah dipasang, buka langsung dari <b>Start Menu</b> (ketik "Sparepart"). Komputer kantor yang dikunci IT bisa memblokir pemasangan aplikasi.</div>';
+    return (edge ? e + c : c + e) + masalah;
+  }
+  /* ---- Windows: pemasang (Pasang-Orient-Sparepart.cmd) -> pintasan ORIENT di Desktop & Start Menu, jendela aplikasi via Edge/Chrome ---- */
+  const windows = /Windows/i.test(ua);
+  function unduhWindows() {
+    const dasar = location.origin + location.pathname.replace(/[^/]*$/, '');
+    const appUrl = dasar + (valid(url) ? '?url=' + encodeURIComponent(url) + '&src=win' : '?src=win');
+    const q = x => String(x).replace(/'/g, "''"); // tanda kutip tunggal PowerShell
+    const ps = [
+      "$ErrorActionPreference='Continue'",
+      "$url='" + q(appUrl) + "'",
+      "$ico='" + q(dasar + 'icons/orient-sparepart.ico') + "'",
+      "$dir=Join-Path $env:LOCALAPPDATA 'OrientSparepart'",
+      "New-Item -ItemType Directory -Force -Path $dir | Out-Null",
+      "$icoPath=Join-Path $dir 'orient-sparepart.ico'",
+      "try { [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri $ico -OutFile $icoPath } catch { }",
+      "$c=@(\"${env:ProgramFiles(x86)}\\Microsoft\\Edge\\Application\\msedge.exe\",\"$env:ProgramFiles\\Microsoft\\Edge\\Application\\msedge.exe\",\"$env:ProgramFiles\\Google\\Chrome\\Application\\chrome.exe\",\"${env:ProgramFiles(x86)}\\Google\\Chrome\\Application\\chrome.exe\",\"$env:LOCALAPPDATA\\Google\\Chrome\\Application\\chrome.exe\")",
+      "$exe=$c | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1",
+      "if (-not $exe) { Write-Host 'Microsoft Edge / Google Chrome tidak ditemukan di komputer ini.'; exit 1 }",
+      "$ws=New-Object -ComObject WScript.Shell",
+      "$tujuan=@([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs'))",
+      "foreach ($t in $tujuan) { $l=$ws.CreateShortcut((Join-Path $t 'Orient Sparepart.lnk')); $l.TargetPath=$exe; $l.Arguments='--app=\"' + $url + '\"'; $l.WorkingDirectory=$dir; if (Test-Path $icoPath) { $l.IconLocation=$icoPath + ',0' }; $l.Description='Orient Sparepart'; $l.Save() }",
+      "Write-Host ''; Write-Host 'Aplikasi Orient Sparepart berhasil dipasang:' -ForegroundColor Green; Write-Host ' - Ikon Orient Sparepart di Desktop'; Write-Host ' - Orient Sparepart di Start Menu (ketik Sparepart)'; Write-Host ''",
+      "Start-Process -FilePath $exe -ArgumentList ('--app=\"' + $url + '\"')"
+    ].join('\n');
+    let bin = ''; for (let i = 0; i < ps.length; i++) { const k = ps.charCodeAt(i); bin += String.fromCharCode(k & 255, k >> 8); } // UTF-16LE untuk -EncodedCommand
+    const cmd = ['@echo off', 'title Pasang Aplikasi Orient Sparepart', 'echo.', 'echo   Memasang aplikasi Orient Sparepart...', 'echo.',
+      'powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ' + btoa(bin), 'echo.', 'echo   Selesai. Jendela ini boleh ditutup.', 'timeout /t 8 >nul'].join('\r\n') + '\r\n';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([cmd], { type: 'application/octet-stream' })); a.download = 'Pasang-Orient-Sparepart.cmd';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    const w = $('winInfo'); if (w) w.style.display = '';
+  }
+  const tombolWindows = () => '<div class="row" style="margin:4px 0 8px"><button class="btn big" id="unduhWin" type="button">🪟 Download untuk Windows</button></div>'
+    + '<div id="winInfo" class="sub" style="display:none;text-align:left;font-size:12.5px;margin:0 0 8px"><b>Setelah file Pasang-Orient-Sparepart.cmd terunduh:</b><ol class="lg" style="margin-top:4px"><li>Buka file itu (klik dua kali di bilah unduhan / folder <b>Unduhan</b>). Bila browser bertanya, pilih <b>Simpan / Tetap simpan</b>.</li><li>Bila muncul <b>"Windows melindungi PC Anda"</b>: klik <b>Info selengkapnya</b> &rarr; <b>Tetap jalankan</b>.</li><li>Tunggu beberapa detik: ikon <b>Orient Sparepart</b> muncul di Desktop &amp; Start Menu, dan aplikasi langsung terbuka di jendelanya sendiri.</li></ol></div>';
+  function isiPasang() {
+    document.querySelectorAll('#devPil [data-d]').forEach(b => b.classList.toggle('on', b.dataset.d === dev));
+    let h = '';
+    if (dev === 'ios') h = '<h2>Pasang di iPhone / iPad</h2>' + (iosNonSafari ? '<div class="sub" style="margin:4px 0 6px">Bila langkah di bawah tidak tersedia, salin alamat halaman ini lalu buka di <b>Safari</b>.</div>' : '') + '<ol class="lg"><li>Ketuk ikon <b>Bagikan</b> <span class="k">⬆</span> (kotak dengan panah ke atas) di bilah bawah / atas Safari.</li><li>Gulir lalu pilih <b>Tambah ke Layar Utama</b> <span class="k">＋</span>.</li><li>Ketuk <b>Tambah</b>. Ikon <b>Orient Sparepart</b> muncul di layar utama.</li><li>Buka dari ikon tersebut, lalu masuk seperti biasa.</li></ol>';
+    else if (dev === 'desktop' && firefox) h = '<h2>Pasang di Komputer</h2><ol class="lg"><li>Firefox belum mendukung pemasangan aplikasi. Buka alamat halaman ini di <b>Google Chrome</b> atau <b>Microsoft Edge</b>, lalu klik <b>Pasang Aplikasi</b>.</li></ol>';
+    else if (dev === 'desktop' && safariMac) h = '<h2>Pasang di Mac (Safari)</h2><ol class="lg"><li>Menu <b>File</b> &rarr; <b>Tambahkan ke Dock</b> (macOS Sonoma ke atas).</li><li>Atau buka halaman ini di Google Chrome / Microsoft Edge.</li></ol>';
+    else {
+      h = '<h2>' + (dev === 'android' ? 'Pasang di Android' : 'Pasang di Komputer') + '</h2>'
+        + '<div class="row" style="margin:8px 0 6px"><button class="btn pri big" id="pasangNow" type="button">⬇ Pasang Aplikasi</button></div>'
+        + (dev === 'desktop' && windows ? '<div class="sub" style="text-align:center;margin:2px 0 4px">atau, bila tombol di atas tidak berhasil:</div>' + tombolWindows() : '')
+        + (deferred ? '<div class="sub" style="text-align:center">Klik tombol di atas, lalu pilih <b>Instal</b>.</div>' : '')
+        + (manual || !deferred ? '<div id="pasangManual" style="' + (manual ? '' : 'display:none') + '">' + langkahManual() + '</div>' : '')
+        + '<div class="sub" style="text-align:center;margin-top:6px">Setelah terpasang, buka dari ikon <b>Orient Sparepart</b> di ' + (dev === 'android' ? 'layar utama' : 'Start Menu / Desktop / taskbar') + '.</div>';
+    }
+    if (!valid(url)) h += '<div class="err" style="margin-top:6px">Alamat portal belum ada. Buka halaman ini dari tombol <b>Download Aplikasi</b> di aplikasi Sparepart, atau klik "Lanjut tanpa memasang" untuk mengisi alamat.</div>';
+    $('pasangIsi').innerHTML = h;
+    const pn = $('pasangNow'); if (pn) pn.addEventListener('click', pasangSekarang);
+    const uw = $('unduhWin'); if (uw) uw.addEventListener('click', unduhWindows);
+  }
+  async function pasangSekarang() {
+    if (!deferred) { // browser belum memberi izin pasang otomatis -> tampilkan langkah persis sesuai browser
+      manual = true; isiPasang(); const m = $('pasangManual'); if (m) { m.style.display = ''; m.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      return;
+    }
+    deferred.prompt(); const r = await deferred.userChoice; deferred = null;
+    if (r && r.outcome === 'accepted') { $('pasangIsi').innerHTML = '<h2 class="ok">Aplikasi Orient Sparepart sedang dipasang ✓</h2><div class="sub">Setelah selesai, buka dari ikon <b>Orient Sparepart</b> di layar utama / Start Menu.</div>'; }
+    else isiPasang();
+  }
+  document.querySelectorAll('#devPil [data-d]').forEach(b => b.addEventListener('click', () => { dev = b.dataset.d; isiPasang(); }));
+  $('lanjutWeb').addEventListener('click', () => { store.set('ospPasangLihat', '1'); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} buka(); });
+  const perluPasang = () => !standalone() && (location.hash === '#pasang' || !store.get('ospPasangLihat'));
+
+  /* ---- portal meminta muat ulang (ada versi baru) ---- */
+  window.addEventListener('message', e => {
+    if (!/^https:\/\/([a-z0-9-]+\.)*(google\.com|googleusercontent\.com)$/i.test(e.origin || '')) return;
+    if (e.data && (e.data.orient === 'muat-ulang' || (e.data.pa && e.data.app === 'sparepart'))) { toast('Memasang versi terbaru...'); buka(); }
+  });
+
+  /* service worker: buka cepat & tampil saat offline; pembaruan otomatis */
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    let adaBaru = false;
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      const cek = () => { try { reg.update(); } catch (e) {} };
+      cek(); setInterval(cek, 30 * 60 * 1000); document.addEventListener('visibilitychange', () => { if (!document.hidden) cek(); });
+    }).catch(() => {});
+    // versi bingkai baru aktif: dipakai otomatis (dimuat ulang saat aplikasi tidak sedang dilihat, atau langsung bila portal belum terbuka)
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!loaded) location.reload(); else adaBaru = true; });
+    document.addEventListener('visibilitychange', () => { if (document.hidden && adaBaru) { adaBaru = false; location.reload(); } });
+  }
+  if (perluPasang()) { lay('pasang'); isiPasang(); } else buka();
+})();
+</script>
+</body>
+</html>
