@@ -124,6 +124,7 @@ ol.lg{margin:10px 0 4px;padding-left:22px;line-height:1.6}ol.lg li{margin-bottom
 <button id="fab" type="button" aria-label="Menu aplikasi ORIENT" aria-haspopup="menu" title="Menu aplikasi (bisa digeser)"><img src="icons/logo.png" alt=""></button>
 <div id="menu" role="menu">
   <button role="menuitem" data-a="reload">⟳ Muat ulang portal</button>
+  <button role="menuitem" data-a="update">⇪ Cek pembaruan aplikasi</button>
   <button role="menuitem" data-a="direct">↗ Buka langsung (tanpa bingkai)</button>
   <button role="menuitem" data-a="install" id="mInstall">⬇ Pasang aplikasi di perangkat ini</button>
   <button role="menuitem" data-a="full" id="mFull">⛶ Layar penuh</button>
@@ -138,7 +139,7 @@ ol.lg{margin:10px 0 4px;padding-left:22px;line-height:1.6}ol.lg li{margin-bottom
 /* ============ PENGATURAN ============ */
 // Isi dengan URL Web App Apps Script Anda (berakhiran /exec). Kosongkan bila ingin diisi lewat layar "Atur Aplikasi".
 const APP_URL = '';
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 /* ==================================== */
 (function () {
   const $ = id => document.getElementById(id);
@@ -155,14 +156,25 @@ const APP_VERSION = '1.3.0';
   const standalone = () => { try { return qs.get('src') === 'win' || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: minimal-ui)').matches || navigator.standalone === true; } catch (e) { return false; } };
   const denganApp = u => u + (u.indexOf('?') > -1 ? '&' : '?') + 'app=1'; // portal tahu sedang dibuka dari aplikasi (tombol Download disembunyikan)
   $('ver').textContent = 'ORIENT App v' + APP_VERSION;
-  let loaded = false, slowT = null;
+  /* v1.4: pembaruan otomatis bingkai aplikasi (file di GitHub Pages) */
+  let swReg = null;
+  async function cekBingkai(paksa) {
+    if (!swReg) return false;
+    try { await swReg.update(); } catch (e) {}
+    if (swReg.waiting) { swReg.waiting.postMessage('skipWaiting'); return true; }
+    if (swReg.installing) return true;
+    return false;
+  }
+  let loaded = false, slowT = null, baru = false, dimuat = 0, sembunyi = 0, versiPortal = '';
+  const tampilVer = () => { $('ver').textContent = 'ORIENT App v' + APP_VERSION + (versiPortal ? ' · Portal ' + versiPortal.replace(/^.*-/, '') : ''); };
 
   function buka() {
     if (!valid(url)) { lay('setup'); $('urlIn').value = url || ''; setTimeout(() => $('urlIn').focus(), 50); return; }
     if (!navigator.onLine) { lay('offline'); return; }
     if (store.get('orientMode') === 'direct') { location.replace(url); return; }
-    loaded = false; lay('splash'); $('splashTxt').textContent = 'Memuat Portal Aftersales...';
-    frame.classList.remove('on'); frame.src = denganApp(url);
+    loaded = false; lay('splash'); $('splashTxt').textContent = baru ? 'Memasang versi terbaru...' : 'Memuat Portal Aftersales...';
+    // v1.4: penanda waktu di alamat -> portal selalu diambil baru dari server (tidak memakai salinan lama di perangkat)
+    frame.classList.remove('on'); frame.src = denganApp(url) + '&_t=' + Date.now().toString(36); baru = false; dimuat = Date.now();
     clearTimeout(slowT); slowT = setTimeout(() => { if (!loaded) lay('slow'); }, 30000);
   }
   frame.addEventListener('load', () => {
@@ -198,6 +210,7 @@ const APP_VERSION = '1.3.0';
     const b = e.target.closest('[data-a]'); if (!b) return; menu.classList.remove('on'); fab.classList.remove('open');
     const a = b.dataset.a;
     if (a === 'reload') buka();
+    else if (a === 'update') { toast('Memeriksa pembaruan...'); const ada = await cekBingkai(true); baru = true; if (ada) { toast('Memasang versi terbaru aplikasi...'); setTimeout(() => location.reload(), 900); } else { buka(); toast('Portal dimuat ulang dengan versi terbaru.'); } }
     else if (a === 'direct') location.assign(url);
     else if (a === 'url') { lay('setup'); $('urlIn').value = url || ''; }
     else if (a === 'full') { try { document.fullscreenElement ? await document.exitFullscreen() : await document.documentElement.requestFullscreen(); } catch (x) {} }
@@ -284,17 +297,34 @@ const APP_VERSION = '1.3.0';
   const perluPasang = () => !standalone() && (location.hash === '#pasang' || !store.get('orientPasangLihat'));
 
   /* ---- portal meminta muat ulang (ada versi baru) ---- */
-  window.addEventListener('message', e => {
+  window.addEventListener('message', async e => {
     if (!/^https:\/\/([a-z0-9-]+\.)*(google\.com|googleusercontent\.com)$/i.test(e.origin || '')) return;
-    if (e.data && e.data.orient === 'muat-ulang') { toast('Memasang versi terbaru portal...'); buka(); }
+    const d = e.data || {};
+    if (d.orient === 'versi' && d.v) { versiPortal = String(d.v); tampilVer(); }
+    if (d.orient === 'muat-ulang') {
+      if (d.v) { versiPortal = String(d.v); tampilVer(); }
+      toast('Memasang versi terbaru portal...'); baru = true;
+      if (await cekBingkai(true)) { setTimeout(() => location.reload(), 900); return; } // bingkai juga ada versi baru -> muat ulang seluruh aplikasi
+      buka();
+    }
+  });
+  /* v1.4: aplikasi lama tidak dibuka (diminimalkan / ditinggal) >= 60 menit -> saat dibuka lagi, portal dimuat ulang (selalu versi terbaru) */
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { sembunyi = Date.now(); return; }
+    if (loaded && sembunyi && Date.now() - sembunyi >= 60 * 60 * 1000 && navigator.onLine) { sembunyi = 0; baru = true; buka(); }
   });
 
   /* service worker: buka cepat & tampil saat offline; pembaruan otomatis */
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     let adaBaru = false;
-    navigator.serviceWorker.register('sw.js').then(reg => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+      swReg = reg;
       const cek = () => { try { reg.update(); } catch (e) {} };
-      cek(); setInterval(cek, 30 * 60 * 1000); document.addEventListener('visibilitychange', () => { if (!document.hidden) cek(); });
+      cek(); setInterval(cek, 10 * 60 * 1000); document.addEventListener('visibilitychange', () => { if (!document.hidden) cek(); });
+      // versi baru sudah terunduh -> langsung dipakai
+      const pasang = w => { if (w) w.postMessage('skipWaiting'); };
+      if (reg.waiting) pasang(reg.waiting);
+      reg.addEventListener('updatefound', () => { const w = reg.installing; if (w) w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) pasang(w); }); });
     }).catch(() => {});
     // versi bingkai baru aktif: dipakai otomatis (dimuat ulang saat aplikasi tidak sedang dilihat, atau langsung bila portal belum terbuka)
     navigator.serviceWorker.addEventListener('controllerchange', () => { if (!loaded) location.reload(); else adaBaru = true; });
